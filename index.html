@@ -1,1 +1,157 @@
-# AMF
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Node.js Takenlijst</title>
+  <style>
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      background: #0f172a;
+      color: #f8fafc;
+      display: flex;
+      justify-content: center;
+      padding: 3rem 1rem;
+      margin: 0;
+    }
+    .card {
+      background: #1e293b;
+      padding: 2rem;
+      border-radius: 16px;
+      width: 100%;
+      max-width: 460px;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4);
+    }
+    h1 { margin-top: 0; font-size: 1.5rem; margin-bottom: 1rem; }
+    .nav-btn {
+      display: block;
+      width: 100%;
+      padding: 0.65rem 1rem;
+      margin-bottom: 1.5rem;
+      border: none;
+      border-radius: 8px;
+      background: #475569;
+      color: white;
+      font-weight: 600;
+      cursor: pointer;
+      text-align: center;
+      text-decoration: none;
+      box-sizing: border-box;
+      transition: background 0.2s;
+    }
+    .nav-btn:hover { background: #334155; }
+    form { display: flex; gap: 0.5rem; margin-bottom: 1.5rem; }
+    input {
+      flex: 1;
+      padding: 0.65rem 0.9rem;
+      border-radius: 8px;
+      border: 1px solid #334155;
+      background: #0f172a;
+      color: white;
+      font-size: 1rem;
+    }
+    button[type="submit"] {
+      padding: 0.65rem 1rem;
+      border: none;
+      border-radius: 8px;
+      background: #3b82f6;
+      color: white;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    button[type="submit"]:hover { background: #2563eb; }
+    ul { list-style: none; padding: 0; margin: 0; }
+    li {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0.75rem;
+      background: #0f172a;
+      border-radius: 8px;
+      margin-bottom: 0.5rem;
+    }
+    .task-text { cursor: pointer; flex: 1; }
+    .done { text-decoration: line-through; opacity: 0.5; }
+    .del-btn {
+      background: #ef4444;
+      padding: 0.35rem 0.65rem;
+      font-size: 0.85rem;
+      margin-left: 0.5rem;
+      border: none;
+      border-radius: 4px;
+      color: white;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .del-btn:hover { background: #dc2626; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>Takenlijst</h1>
+    
+    <!-- Nieuwe knop om naar app.js te navigeren -->
+    <button class="nav-btn" onclick="window.location.href='app.js'">Ga naar app.js</button>
+    
+    <form id="task-form">
+      <input type="text" id="task-input" placeholder="Nieuwe taak..." required />
+      <button type="submit">Toevoegen</button>
+    </form>
+    <ul id="task-list"></ul>
+  </div>
+
+  <script>
+    const list = document.getElementById('task-list');
+    const form = document.getElementById('task-form');
+    const input = document.getElementById('task-input');
+
+    async function loadTasks() {
+      const res = await fetch('/api/tasks');
+      const tasks = await res.json();
+      list.innerHTML = '';
+
+      tasks.forEach(function(task) {
+        const li = document.createElement('li');
+
+        const span = document.createElement('span');
+        span.textContent = task.text;
+        span.className = 'task-text' + (task.done ? ' done' : '');
+        span.onclick = async function() {
+          await fetch('/api/tasks/' + task.id, { method: 'PATCH' });
+          loadTasks();
+        };
+
+        const delBtn = document.createElement('button');
+        delBtn.textContent = 'Verwijder';
+        delBtn.className = 'del-btn';
+        delBtn.onclick = async function() {
+          await fetch('/api/tasks/' + task.id, { method: 'DELETE' });
+          loadTasks();
+        };
+
+        li.appendChild(span);
+        li.appendChild(delBtn);
+        list.appendChild(li);
+      });
+    }
+
+    form.onsubmit = async function(e) {
+      e.preventDefault();
+      const text = input.value.trim();
+      if (!text) return;
+
+      await fetch('/api/tasks', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text: text })
+      });
+
+      input.value = '';
+      loadTasks();
+    };
+
+    loadTasks();
+  </script>
+</body>
+</html>
